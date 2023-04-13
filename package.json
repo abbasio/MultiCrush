@@ -1,0 +1,17 @@
+{
+  "name": "multicrush",
+  "version": "0.0.1",
+  "main": "main.ts",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "matter-js": "^0.19.0",
+    "phaser": "^3.55.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  }
+}
