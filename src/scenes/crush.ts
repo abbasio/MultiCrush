@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser';
+import { buildScene } from './build';
 
-export class MainScene extends Phaser.Scene {
+export class crushScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'MainScene' });
+    super({ key: 'crushScene' });
   }
 
   create() {
