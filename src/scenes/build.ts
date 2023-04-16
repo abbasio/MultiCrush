@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { createBlock } from '../utils/createBlock';
+import { createTextButton } from '../utils/createButtons';
 
 export class buildScene extends Phaser.Scene {
   constructor() {
@@ -19,6 +21,7 @@ export class buildScene extends Phaser.Scene {
   create() {
     const Bodies = this.matter.bodies;
     const Shapes = this.cache.json.get('shapes');
+    const savedBlocks: Record<any, any>[] = [];
     let currentBlock = '';
 
     // Set up bodies
@@ -29,58 +32,38 @@ export class buildScene extends Phaser.Scene {
     this.matter.world.add(ground);
 
     // Set up buttons
-    const blockButton = this.add.text(100, 100, 'Block', {});
-    blockButton
-      .setInteractive()
-      .on('pointerdown', () => {
+    const blockButton = createTextButton(this, 100, 100, 'Block').on(
+      'pointerdown',
+      () => {
         currentBlock = 'block';
-      })
-      .on('pointerover', () => {
-        blockButton.setStyle({
-          color: '#0f0',
-        });
-      })
-      .on('pointerout', () => {
-        blockButton.setStyle({
-          color: '#fff',
-        });
-      });
+      }
+    );
 
-    const castleButton = this.add.text(300, 100, 'Castle', {});
-    castleButton
-      .setInteractive()
-      .on('pointerdown', () => {
+    const castleButton = createTextButton(this, 300, 100, 'Castle').on(
+      'pointerdown',
+      () => {
         currentBlock = 'castle';
-      })
-      .on('pointerover', () => {
-        castleButton.setStyle({
-          color: '#0f0',
-        });
-      })
-      .on('pointerout', () => {
-        castleButton.setStyle({
-          color: '#fff',
-        });
-      });
+      }
+    );
 
-    const createObjectOnClick = (pointer: any, key: string, block: string) => {
-      this.matter.add.image(pointer.x, pointer.y, key, block, {
-        shape: Shapes[block],
-      } as Phaser.Types.Physics.Matter.MatterBodyConfig);
-    };
+    const nextSceneButton = createTextButton(this, 900, 100, 'Next Scene').on(
+      'pointerdown',
+      () => {
+        this.scene.start('crushScene', { blocks: savedBlocks });
+      }
+    );
 
     // Add block to scene on click
     this.input.on('pointerdown', (pointer) => {
-      console.log(pointer.x);
-      if (currentBlock.length && pointer.x > 500) {
-        createObjectOnClick(pointer, 'sheet', currentBlock);
+      if (currentBlock.length && pointer.x > 500 && pointer.y > 200) {
+        createBlock(this, pointer.x, pointer.y, 'sheet', currentBlock, Shapes);
+        savedBlocks.push({
+          x: pointer.x,
+          y: pointer.y,
+          key: 'sheet',
+          block: currentBlock,
+        });
       }
     });
-
-    //Things to try:
-    // Add buttons to generate different fort parts
-    // Add a save button
-    // On click, saves the x pos, y pos, and name, and config of each object into a json
-    // On loading the next scene, parse that info from the json and load the objects into the new scene
   }
 }
