@@ -6,7 +6,7 @@ export const createBlock = (
   block: string,
   Shapes: any
 ) => {
-  scene.matter.add.image(x, y, key, block, {
+  return scene.matter.add.image(x, y, key, block, {
     shape: Shapes[block],
     ignorePointer: true,
   } as Phaser.Types.Physics.Matter.MatterBodyConfig);

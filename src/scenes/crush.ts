@@ -40,9 +40,10 @@ export class crushScene extends Phaser.Scene {
     let rock = createPolygon(Bodies, 200, 500, 8, 20, rockOptions);
     this.matter.world.add(rock);
 
-    this.blocks.forEach((block) => {
+    for (let key in this.blocks) {
+      const block = this.blocks[key];
       createBlock(this, block.x, block.y, block.key, block.block, Shapes);
-    });
+    }
 
     // Set up slingshot
     const anchor = { x: 200, y: 500 };

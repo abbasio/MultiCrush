@@ -21,8 +21,10 @@ export class buildScene extends Phaser.Scene {
   create() {
     const Bodies = this.matter.bodies;
     const Shapes = this.cache.json.get('shapes');
-    const savedBlocks: Record<any, any>[] = [];
+    const savedBlocks: Record<any, any> = {};
+    let index = 0;
     let currentBlock = '';
+    let currentMode = 'build';
 
     // Set up bodies
     const ground = Bodies.rectangle(900, 600, 815, 50, {
@@ -36,6 +38,7 @@ export class buildScene extends Phaser.Scene {
       'pointerdown',
       () => {
         currentBlock = 'block';
+        currentMode = 'build';
       }
     );
 
@@ -43,6 +46,15 @@ export class buildScene extends Phaser.Scene {
       'pointerdown',
       () => {
         currentBlock = 'castle';
+        currentMode = 'build';
+      }
+    );
+
+    const deleteButton = createTextButton(this, 500, 100, 'Delete Block').on(
+      'pointerdown',
+      () => {
+        currentBlock = '';
+        currentMode = 'delete';
       }
     );
 
@@ -56,13 +68,28 @@ export class buildScene extends Phaser.Scene {
     // Add block to scene on click
     this.input.on('pointerdown', (pointer) => {
       if (currentBlock.length && pointer.x > 500 && pointer.y > 200) {
-        createBlock(this, pointer.x, pointer.y, 'sheet', currentBlock, Shapes);
-        savedBlocks.push({
+        const createdBlock = createBlock(
+          this,
+          pointer.x,
+          pointer.y,
+          'sheet',
+          currentBlock,
+          Shapes
+        )
+          .setInteractive()
+          .setData('index', index)
+          .on('pointerdown', () => {
+            console.log(createdBlock.getData('index'));
+            delete savedBlocks[createdBlock.getData('index')];
+            createdBlock.destroy();
+          });
+        savedBlocks[index] = {
           x: pointer.x,
           y: pointer.y,
           key: 'sheet',
           block: currentBlock,
-        });
+        };
+        index++;
       }
     });
   }
