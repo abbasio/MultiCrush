@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { createBlock } from '../utils/createBlock';
+import { Object } from '../types/types';
+import { createObject } from '../utils/createMatterObjects';
 import { createTextButton } from '../utils/createButtons';
 
 export class buildScene extends Phaser.Scene {
@@ -7,89 +8,159 @@ export class buildScene extends Phaser.Scene {
     super({ key: 'buildScene' });
   }
   preload() {
-    // Load sprite sheet
+    // Load sprite sheets
     this.load.atlas(
-      'sheet',
+      'blockSheet',
       'assets/block-sprites.png',
       'assets/block-sprites.json'
     );
 
+    this.load.image('slime', 'assets/slime.png');
+
     // Load body shapes from JSON file generated using PhysicsEditor
-    this.load.json('shapes', 'assets/block-shapes.json');
+    this.load.json('blockShapes', 'assets/block-shapes.json');
+    this.load.json('slimeShape', 'assets/slime-shape.json');
   }
 
   create() {
     const Bodies = this.matter.bodies;
-    const Shapes = this.cache.json.get('shapes');
-    const savedBlocks: Record<any, any> = {};
-    let index = 0;
-    let currentBlock = '';
-    let currentMode = 'build';
+    const blockShapes = this.cache.json.get('blockShapes');
+    const slimeShape = this.cache.json.get('slimeShape');
+    let savedObjects: Record<number, Object> = {};
+    let current = {
+      sprite: '',
+      frame: '',
+      mode: '',
+    };
+    const objectCount = {
+      slime: 1,
+      block: 4,
+      castle: 2,
+    };
+    const grid = this.add
+      .grid(900, 485, 640, 384, 64, 64, 0xff0000)
+      .setInteractive();
 
     // Set up bodies
-    const ground = Bodies.rectangle(900, 600, 815, 50, {
+    const ground = Bodies.rectangle(640, 700, 1280, 50, {
       isStatic: true,
       render: {},
     });
     this.matter.world.add(ground);
 
     // Set up buttons
-    const blockButton = createTextButton(this, 100, 100, 'Block').on(
-      'pointerdown',
-      () => {
-        currentBlock = 'block';
-        currentMode = 'build';
-      }
+    const blockButtonOnClick = () => {
+      current.sprite = 'blockSheet';
+      current.frame = 'block';
+      current.mode = 'create';
+    };
+    const castleButtonOnClick = () => {
+      current.sprite = 'blockSheet';
+      current.frame = 'castle';
+      current.mode = 'create';
+    };
+    const slimeButtonOnClick = () => {
+      current.sprite = 'slime';
+      current.frame = 'slime';
+      current.mode = 'create';
+    };
+    const deleteButtonOnClick = () => {
+      current.sprite = '';
+      current.frame = '';
+      current.mode = 'delete';
+    };
+    const nextSceneButtonOnClick = () => {
+      this.scene.start('crushScene', { objects: savedObjects });
+    };
+
+    const saveSceneButtonOnClick = () => {
+      savedObjects = {};
+      const allObjects = this.children.list.filter(
+        (child) => child instanceof Phaser.Physics.Matter.Image
+      );
+      allObjects.forEach((obj: any, index: number) => {
+        const key = obj.body.label === 'slime' ? 'slime' : 'blockSheet';
+        const savedObject: Object = {
+          x: obj.body.position.x,
+          y: obj.body.position.y,
+          key,
+          frame: obj.body.label,
+        };
+        savedObjects[index] = savedObject;
+      });
+    };
+    const blockButton = createTextButton(
+      this,
+      100,
+      100,
+      `Block: ${objectCount.block}`,
+      blockButtonOnClick
+    ).on('addObject', () => {
+      blockButton.text = `Block: ${objectCount.block}`;
+    });
+
+    const slimeButton = createTextButton(
+      this,
+      100,
+      150,
+      `Slime: ${objectCount.slime}`,
+      slimeButtonOnClick
     );
 
-    const castleButton = createTextButton(this, 300, 100, 'Castle').on(
-      'pointerdown',
-      () => {
-        currentBlock = 'castle';
-        currentMode = 'build';
-      }
+    const castleButton = createTextButton(
+      this,
+      300,
+      100,
+      `Castle: ${objectCount.castle}`,
+      castleButtonOnClick
     );
 
-    const deleteButton = createTextButton(this, 500, 100, 'Delete Block').on(
-      'pointerdown',
-      () => {
-        currentBlock = '';
-        currentMode = 'delete';
-      }
+    const deleteButton = createTextButton(
+      this,
+      500,
+      100,
+      'Delete Block',
+      deleteButtonOnClick
     );
 
-    const nextSceneButton = createTextButton(this, 900, 100, 'Next Scene').on(
-      'pointerdown',
-      () => {
-        this.scene.start('crushScene', { blocks: savedBlocks });
-      }
+    const saveSceneButton = createTextButton(
+      this,
+      900,
+      100,
+      'Save Scene',
+      saveSceneButtonOnClick
     );
 
-    // Add block to scene on click
-    this.input.on('pointerdown', (pointer) => {
-      if (currentBlock.length && pointer.x > 500 && pointer.y > 200) {
-        const createdBlock = createBlock(
+    const nextSceneButton = createTextButton(
+      this,
+      1100,
+      100,
+      'Next Scene',
+      nextSceneButtonOnClick
+    );
+
+    // Add block to scene when the grid is clicked
+    grid.on('pointerdown', (pointer) => {
+      if (current.mode === 'create' && objectCount[current.frame] > 0) {
+        let currentShape =
+          current.sprite === 'slime' ? slimeShape : blockShapes;
+        const createdObject: Phaser.Physics.Matter.Image = createObject(
           this,
           pointer.x,
           pointer.y,
-          'sheet',
-          currentBlock,
-          Shapes
+          current.sprite,
+          current.frame,
+          currentShape
         )
-          .setInteractive()
-          .setData('index', index)
+          .setInteractive() // Set the created object as interactive and give it a pointerdown listener
           .on('pointerdown', () => {
-            console.log(createdBlock.getData('index'));
-            delete savedBlocks[createdBlock.getData('index')];
-            createdBlock.destroy();
+            if (current.mode === 'delete') {
+              if ('label' in createdObject.body)
+                objectCount[createdObject.body.label]++;
+              createdObject.destroy();
+            }
           });
-        savedBlocks[index] = {
-          x: pointer.x,
-          y: pointer.y,
-          key: 'sheet',
-          block: currentBlock,
-        };
-        index++;
+        objectCount[current.frame]--;
       }
     });
   }

@@ -2,7 +2,8 @@ export const createTextButton = (
   scene: Phaser.Scene,
   x: number,
   y: number,
-  text: string
+  text: string,
+  onClick: Function
 ) => {
   const button = scene.add
     .text(x, y, text)
@@ -16,6 +17,9 @@ export const createTextButton = (
       button.setStyle({
         color: '#fff',
       });
+    })
+    .on('pointerdown', () => {
+      onClick();
     });
   return button;
 };
