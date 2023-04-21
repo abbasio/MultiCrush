@@ -95,9 +95,7 @@ export class buildScene extends Phaser.Scene {
       100,
       `Block: ${objectCount.block}`,
       blockButtonOnClick
-    ).on('addObject', () => {
-      blockButton.text = `Block: ${objectCount.block}`;
-    });
+    );
 
     const slimeButton = createTextButton(
       this,
@@ -141,26 +139,46 @@ export class buildScene extends Phaser.Scene {
 
     // Add block to scene when the grid is clicked
     grid.on('pointerdown', (pointer) => {
-      if (current.mode === 'create' && objectCount[current.frame] > 0) {
+      // Calculate center of grid cell clicked on via pointer coordinates
+      const gridCellCenter = {
+        x:
+          Math.floor(grid.getLocalPoint(pointer.x, pointer.y).x / 64) * 64 +
+          612,
+        y:
+          Math.floor(grid.getLocalPoint(pointer.x, pointer.y).y / 64) * 64 +
+          325,
+      };
+      if (current.mode === 'create') {
         let currentShape =
           current.sprite === 'slime' ? slimeShape : blockShapes;
-        const createdObject: Phaser.Physics.Matter.Image = createObject(
-          this,
-          pointer.x,
-          pointer.y,
-          current.sprite,
-          current.frame,
-          currentShape
-        )
-          .setInteractive() // Set the created object as interactive and give it a pointerdown listener
-          .on('pointerdown', () => {
-            if (current.mode === 'delete') {
-              if ('label' in createdObject.body)
-                objectCount[createdObject.body.label]++;
-              createdObject.destroy();
-            }
-          });
-        objectCount[current.frame]--;
+        if (objectCount[current.frame] === 0) {
+          console.log(`No more ${current.frame}s left!`);
+        }
+        if (objectCount[current.frame] > 0) {
+          const createdObject: Phaser.Physics.Matter.Image = createObject(
+            this,
+            gridCellCenter.x,
+            gridCellCenter.y,
+            current.sprite,
+            current.frame,
+            currentShape
+          )
+            .setInteractive() // Set the created object as interactive and give it a pointerdown listener
+            .on('pointerdown', () => {
+              if (current.mode === 'delete') {
+                if ('label' in createdObject.body)
+                  objectCount[createdObject.body.label]++;
+                blockButton.text = `Block: ${objectCount.block}`;
+                castleButton.text = `Castle: ${objectCount.castle}`;
+                slimeButton.text = `Slime: ${objectCount.slime}`;
+                createdObject.destroy();
+              }
+            });
+          objectCount[current.frame]--;
+          blockButton.text = `Block: ${objectCount.block}`;
+          castleButton.text = `Castle: ${objectCount.castle}`;
+          slimeButton.text = `Slime: ${objectCount.slime}`;
+        }
       }
     });
   }

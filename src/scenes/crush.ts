@@ -31,6 +31,7 @@ export class crushScene extends Phaser.Scene {
     const Bodies = this.matter.bodies;
     const blockShapes = this.cache.json.get('blockShapes');
     const slimeShape = this.cache.json.get('slimeShape');
+    let shotCount = 0;
 
     // Set up bodies
     const ground = Bodies.rectangle(860, 700, 640, 50, {
@@ -57,9 +58,24 @@ export class crushScene extends Phaser.Scene {
       const currentShape = obj.key === 'slime' ? slimeShape : blockShapes;
       createObject(this, obj.x, obj.y, obj.key, obj.frame, currentShape);
     }
+    this.matter.world.on('collisionstart', function (event, bodyA, bodyB) {
+      if (bodyA.label === 'slime' && bodyB.speed > 0) {
+        console.log(bodyB.speed);
+        bodyA.gameObject.destroy();
+      }
+      if (bodyB.label === 'slime' && bodyA.speed > 0) {
+        console.log(bodyA.speed);
+        bodyB.gameObject.destroy();
+      }
+    });
 
+    // Add shot counter
+    const shotCounter = this.add.text(100, 100, `Shots taken: ${shotCount}`);
     // Add buttons to scene
     const resetButtonOnClick = () => {
+      this.scene.start('crushScene', { objects: this.objects });
+    };
+    const restartButtonOnClick = () => {
       this.scene.start('buildScene');
     };
     const resetButton = createTextButton(
@@ -68,6 +84,13 @@ export class crushScene extends Phaser.Scene {
       100,
       'Reset',
       resetButtonOnClick
+    );
+    const restartButton = createTextButton(
+      this,
+      1100,
+      100,
+      'Restart',
+      restartButtonOnClick
     );
 
     // Set up slingshot
@@ -87,6 +110,9 @@ export class crushScene extends Phaser.Scene {
         this.input.activePointer.leftButtonReleased() &&
         rock.position.x > 220
       ) {
+        shotCount++;
+        shotCounter.text = `Shots taken: ${shotCount}`;
+
         rock = createPolygon(this, Bodies, 200, 500, 8, 20, rockOptions);
         elastic.bodyB = rock;
       }

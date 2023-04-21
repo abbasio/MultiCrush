@@ -23,6 +23,7 @@ export const createObject = (
   Shapes: any
 ) => {
   return scene.matter.add.image(x, y, key, frame, {
+    label: frame,
     shape: Shapes[frame],
     ignorePointer: true,
   } as Phaser.Types.Physics.Matter.MatterBodyConfig);
